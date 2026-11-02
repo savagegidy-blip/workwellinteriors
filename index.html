@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Drive to Felicia 💍</title>
+<meta property="og:title" content="Felicia, I made something for you 💕">
+<meta property="og:description" content="Tap to play. Float through the clouds…">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#7b6cff">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@1,600&display=swap">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--pink:#ff6fae;--gold:#ffd27a;--ink:#3a2159}
+html,body{height:100%;margin:0;background:#2a1650;color:#fff;font-family:'Cormorant Garamond',Georgia,serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#wrap{height:100%;display:flex;align-items:center;justify-content:center}
+#box{position:relative;height:100%;max-height:720px;aspect-ratio:9/16;max-width:100%;border-radius:18px;overflow:hidden;box-shadow:0 0 70px #ff9ccf88}
+canvas{width:100%;height:100%;display:block}
+#ui{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px;gap:14px}
+.panel{background:#ffffff26;border:1px solid #ffffff66;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:26px;padding:26px 20px;display:flex;flex-direction:column;align-items:center;gap:14px;box-shadow:0 10px 40px #4a1d7a55;max-width:100%}
+h1{margin:0;font:400 46px 'Great Vibes',cursive;text-shadow:0 2px 14px #b0397a;line-height:1.1}
+p{margin:0;font-size:20px;font-style:italic;font-weight:600;line-height:1.35;text-shadow:0 1px 8px #6a2a8a}
+button{font:600 20px 'Cormorant Garamond',Georgia,serif;font-style:italic;padding:12px 32px;border:0;border-radius:30px;background:linear-gradient(135deg,#ff6fae,#ffb36b);color:#fff;box-shadow:0 6px 24px #ff6fae99;transition:transform .2s}
+button:active{transform:scale(.94)}
+#row{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap}
+#no{background:#ffffff40;box-shadow:none}
+#card{position:absolute;left:18px;right:18px;top:50px;padding:12px 16px;border-radius:18px;background:#ffffff33;border:1px solid #ffffff88;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:center;font-size:20px;font-style:italic;font-weight:600;text-shadow:0 1px 6px #6a2a8a;opacity:0;transition:opacity .5s;pointer-events:none}
+#card.on{opacity:1}
+#hud{position:absolute;top:12px;left:0;right:0;text-align:center;font-size:24px;letter-spacing:8px;text-shadow:0 0 10px #ff6fae;pointer-events:none}
+@keyframes glow{50%{text-shadow:0 2px 28px #ff6fae,0 0 44px #ffd27a}}@keyframes rise{from{opacity:0;transform:translateY(22px)}}h1{animation:glow 3s ease-in-out infinite}.panel{animation:rise .9s ease both}.hide{display:none!important}
+.big{font-size:56px;filter:drop-shadow(0 0 14px #ffd27a)}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="box">
+<canvas id="c" width="360" height="640"></canvas>
+<div id="hud"></div><div id="card"></div>
+<div id="ui"><div class="panel">
+<div class="big">🎈☁️</div>
+<h1>Float to Felicia</h1>
+<p>Touch and drag anywhere. The balloon follows your finger.<br>Gather 5 hearts and drift around the storm clouds.</p>
+<button id="start">Take off</button>
+</div></div>
+</div></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),ui=document.getElementById('ui'),card=document.getElementById('card'),hud=document.getElementById('hud');
+const lines=['Every day with you is my favorite day.','You make ordinary moments feel special.','I laugh the most when I’m with you.','You’re my favorite person to talk to.','Wherever you are is home to me.'];
+let b,hearts,storms,sparks,got,off=0,dir=0,t=0,phase='menu',slow=0,shake=0,layers=[],ac,fired=false;
+function beep(f,d=.2){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.1;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+function mk(){layers=[[.6,.5,.4,7],[1.1,.8,.7,6],[1.9,1.5,.35,4]].map(([sc,sp,a,n])=>({sc,sp,a,cl:Array.from({length:n},(_,i)=>({x:Math.random()*400-30,y:i*(700/n)+Math.random()*40}))}))}
+function reset(){b={x:180,y:480,vx:0};hearts=[];storms=[];sparks=[];got=0;t=0;slow=0;shake=0;fired=false;phase='play';card.classList.remove('on');hud_()}
+function hud_(){hud.textContent='♥'.repeat(got)+'♡'.repeat(5-got)}
+function cloud(cx,cy,s,a,col='#fff'){x.globalAlpha=a;x.fillStyle=col;x.beginPath();[[0,0,20],[22,-9,25],[48,0,21],[-20,6,15],[68,7,14],[30,8,22]].forEach(([dx,dy,r])=>{x.moveTo(cx+(dx+r)*s,cy+dy*s);x.arc(cx+dx*s,cy+dy*s,r*s,0,7)});x.fill();x.globalAlpha=1}
+function heart(px,py,s,col){x.fillStyle=col;x.beginPath();x.moveTo(px,py+s*.3);x.bezierCurveTo(px,py-s*.4,px-s,py-s*.4,px-s,py+s*.2);x.bezierCurveTo(px-s,py+s*.7,px,py+s,px,py+s*1.2);x.bezierCurveTo(px,py+s,px+s,py+s*.7,px+s,py+s*.2);x.bezierCurveTo(px+s,py-s*.4,px,py-s*.4,px,py+s*.3);x.fill()}
+function balloon(px,py,tilt){
+x.save();x.translate(px,py);x.rotate(tilt);
+x.strokeStyle='#5a3a6a';x.lineWidth=1.2;x.beginPath();[[-20,-6],[-9,-4],[9,-4],[20,-6]].forEach(([a,c2])=>{x.moveTo(a,c2);x.lineTo(a*.4,30)});x.stroke();
+x.fillStyle='#8a4b2e';x.beginPath();x.roundRect(-11,30,22,15,3);x.fill();x.fillStyle='#ffd27a';x.fillRect(-11,30,22,3);
+const g=x.createRadialGradient(-10,-40,6,0,-30,50);g.addColorStop(0,'#ffb3d6');g.addColorStop(.6,'#ff6fae');g.addColorStop(1,'#c23b84');
+x.shadowColor='#ffc2e0';x.shadowBlur=34;x.fillStyle=g;x.beginPath();x.moveTo(-8,28);x.bezierCurveTo(-52,0,-46,-76,0,-80);x.bezierCurveTo(46,-76,52,0,8,28);x.fill();x.shadowBlur=0;
+x.strokeStyle='#ffffff77';x.lineWidth=3;x.beginPath();x.moveTo(0,-80);x.bezierCurveTo(-24,-50,-18,-10,-6,28);x.moveTo(0,-80);x.bezierCurveTo(24,-50,18,-10,6,28);x.stroke();
+x.fillStyle='#ffd27a';x.fillRect(-30,-30,60,6);heart(0,-52,8,'#fff');
+x.restore()}
+function draw(){
+x.save();if(shake>.5){x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.85}
+const g=x.createLinearGradient(0,0,0,640);g.addColorStop(0,'#6a5cff');g.addColorStop(.45,'#d783ff');g.addColorStop(.75,'#ff9ccf');g.addColorStop(1,'#ffd9a8');x.fillStyle=g;x.fillRect(0,0,360,640);for(let i=0;i<46;i++){x.globalAlpha=(.25+.75*Math.abs(Math.sin(t*.03+i)))*(1-((i*47)%260)/300);x.fillStyle='#fff';const z=i%3?1.4:2.4;x.fillRect((i*83)%360,(i*47)%260,z,z)}x.globalAlpha=1;
+const s=x.createRadialGradient(180,640,10,180,640,330);s.addColorStop(0,'#fff3c4cc');s.addColorStop(1,'#fff3c400');x.fillStyle=s;x.fillRect(0,300,360,340);x.save();x.translate(180,700);x.fillStyle='#fff3c4';x.globalAlpha=.11;for(let i=0;i<9;i++){const a=-Math.PI+(i+.5)*Math.PI/9+Math.sin(t*.01)*.06;x.beginPath();x.moveTo(0,0);x.lineTo(Math.cos(a-.05)*900,Math.sin(a-.05)*900);x.lineTo(Math.cos(a+.05)*900,Math.sin(a+.05)*900);x.fill()}x.restore();
+layers.slice(0,2).forEach(L=>L.cl.forEach(k=>cloud(k.x,k.y,L.sc,L.a)));
+hearts.forEach(h=>{const p=1+Math.sin(t*.15)*.15;x.shadowColor='#fff';x.shadowBlur=22;heart(h.x,h.y-10,16*p,'#ff4f9a');x.shadowBlur=0});
+storms.forEach(o=>cloud(o.x-40,o.y,1.1,.92,'#6f5fa3'));
+const sway=Math.sin(t*.04)*3;balloon(b.x,b.y+sway,b.vx*.04);
+sparks.forEach(p=>{x.globalAlpha=Math.max(p.l/40,0);heart(p.x,p.y,4,p.c);x.globalAlpha=1});
+layers[2].cl.forEach(k=>cloud(k.x,k.y,layers[2].sc,layers[2].a));for(let i=0;i<34;i++){x.globalAlpha=.2+.6*Math.abs(Math.sin(t*.05+i*2));x.fillStyle=i%2?'#fff':'#ffe9a8';x.beginPath();x.arc((i*97+t*.25*(i%3+1))%360,(i*53+t*.7*(i%2+1))%640,1.2+(i%3)*.5,0,7);x.fill()}x.globalAlpha=1;const vg=x.createRadialGradient(180,320,200,180,320,460);vg.addColorStop(0,'#2a165000');vg.addColorStop(1,'#2a165077');x.fillStyle=vg;x.fillRect(0,0,360,640);
+x.restore()}
+function step(){
+t++;const sp=slow>0?.5:1;if(slow>0)slow--;
+layers.forEach(L=>L.cl.forEach(k=>{k.y+=L.sp*sp*2;if(k.y>700){k.y=-80;k.x=Math.random()*400-30}}));
+if(phase==='play'){
+const want=tx!==null?Math.max(-9,Math.min(9,(tx-b.x)*.15)):dir*6;b.vx+=(want-b.vx)*.3;b.x=Math.max(55,Math.min(305,b.x+b.vx));
+if(t%50===0&&got+hearts.length<5)hearts.push({x:70+Math.random()*220,y:-30});
+if(t%85===0)storms.push({x:90+Math.random()*190,y:-60});if(t%4===0)sparks.push({x:b.x+(Math.random()-.5)*18,y:b.y+52,vx:(Math.random()-.5)*.6,vy:1.4,l:38,c:t%8?'#fff':'#ffc2e0'});
+hearts.forEach(h=>h.y+=3.6*sp);storms.forEach(o=>o.y+=2.4*sp);
+hearts=hearts.filter(h=>{if(Math.abs(h.x-b.x)<34&&Math.abs(h.y-(b.y-30))<60){card.textContent=lines[got];card.classList.add('on');got++;hud_();beep(520+got*110,.4);for(let i=0;i<16;i++)sparks.push({x:h.x,y:h.y,vx:(Math.random()-.5)*5,vy:(Math.random()-.5)*5,l:40,c:'#fff'});if(got>=5&&!fired){fired=true;setTimeout(propose,1500)}else setTimeout(()=>card.classList.remove('on'),2600);return false}return h.y<690});
+storms=storms.filter(o=>{if(slow<=0&&Math.abs(o.x+10-b.x)<55&&Math.abs(o.y-(b.y-20))<45){slow=45;shake=12;beep(150,.3)}return o.y<720})}
+sparks.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.l--});sparks=sparks.filter(p=>p.l>0);
+if(phase==='end'&&t%9===0)sparks.push({x:Math.random()*360,y:660,vx:(Math.random()-.5),vy:-2-Math.random()*2,l:300,c:['#ff6fae','#ffd27a','#fff'][t%3]});
+if(phase==='end'){b.x+=(180-b.x)*.03;b.y+=(430-b.y)*.03}}
+function loop(){step();draw();requestAnimationFrame(loop)}
+function propose(){
+phase='end';ui.classList.remove('hide');card.classList.remove('on');hud.textContent='';
+ui.innerHTML='<div class="panel"><div class="big">💍</div><h1>Felicia…</h1><p>You’re the best thing that ever happened to me.</p><h1 style="font-size:50px">Will you marry me?</h1><div id="row"><button id="yes">Yes 💖</button><button id="no">No</button></div><p id="note" style="font-size:17px"></p></div>';
+ui.style.justifyContent='flex-end';ui.style.paddingBottom='24px';
+const yes=document.getElementById('yes'),no=document.getElementById('no');
+function accept(){ui.innerHTML='<div class="panel"><div class="big">🎉💍🎉</div><h1 style="font-size:54px">She said yes!</h1><p>Felicia, I love you.<br>Forever starts now. ❤️</p><p>— Gidy</p></div>';ui.style.justifyContent='center';ui.style.paddingBottom='22px';[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.5),i*180));for(let i=0;i<160;i++)sparks.push({x:180,y:330,vx:(Math.random()-.5)*14,vy:(Math.random()-.5)*14,l:220,c:['#ff6fae','#ffd27a','#fff','#9fd8ff'][i%4]})}
+yes.onclick=accept;
+no.onclick=()=>{no.textContent='Yes 💖';no.style.cssText='background:linear-gradient(135deg,#ff6fae,#ffb36b);box-shadow:0 6px 24px #ff6fae99';document.getElementById('note').textContent='Oh… there’s no “No” option for you 😌';beep(660,.3);no.onclick=accept}}
+let tx=null;
+function pt(e){const r=c.getBoundingClientRect();tx=Math.max(55,Math.min(305,(e.clientX-r.left)/r.width*360))}
+addEventListener('pointerdown',e=>{if(phase==='play')pt(e)});
+addEventListener('pointermove',e=>{if(phase==='play'&&e.buttons)pt(e)});
+addEventListener('pointerup',()=>tx=null);
+addEventListener('pointercancel',()=>tx=null);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')dir=-1;if(e.key==='ArrowRight')dir=1});
+addEventListener('keyup',()=>dir=0);
+document.getElementById('start').onclick=()=>{ui.classList.add('hide');reset();beep(440,.4)};
+mk();b={x:180,y:480,vx:0};hearts=[];storms=[];sparks=[];loop();
+</script>
+</body>
+</html>
